@@ -15,6 +15,7 @@ class Finance(db.Model):
     def __repr__(self):
         return f"{self.sr} - {self.amount}"
 
+
 @app.route('/', methods=['GET','POST'])
 def finance():
     if request.method == 'POST':
@@ -59,5 +60,7 @@ def delete(sr):
     
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    with app.app_context():
+        db.create_all()
+    app.run(debug=False)
 
