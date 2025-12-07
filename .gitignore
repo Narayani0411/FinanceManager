@@ -1,0 +1,40 @@
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+myvenv/
+venv/
+env/
+
+# SQLite database files
+instance/
+*.db
+*.sqlite3
+
+# VS Code settings
+.vscode/
+
+# Environment variables / credentials
+.env
+*.env
+
+# Vercel build output
+.vercel/
+
+# Flask session files
+*.pid
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# Compiled / packaged files
+*.egg-info/
+dist/
+build/

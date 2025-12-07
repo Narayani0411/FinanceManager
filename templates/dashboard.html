@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<title>Expense Dashboard</title>
+<!-- Include Chart.js library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    /* Custom Styling for Cards */
+    .stat-card {
+        transition: transform 0.2s;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    .icon-box {
+        width: 45px;
+        height: 45px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    .chart-container {
+        position: relative; 
+        height: 400px; 
+        width: 100%;
+    }
+</style>
+
+<div class="container py-5">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold text-dark">Financial Overview</h2>
+            <p class="text-muted">Summary of your Savings and Finances</p>
+        </div>
+    </div>
+
+    <!-- Stats Cards Row -->
+    <div class="row g-4 mb-5">
+        
+        <!-- 1. Total Savings Card -->
+        <div class="col-md-4">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="text-muted mb-0">Total Savings</h6>
+                        <div class="icon-box bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-piggy-bank"></i> <!-- Bootstrap Icon -->
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-0" id="savingsAmount">Loading...</h3>
+                    <small class="text-success fw-bold">
+                        Current Balance
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Highest Category Card -->
+        <div class="col-md-4">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="text-muted mb-0">Top Cash Flow Statement</h6>
+                        <div class="icon-box bg-warning bg-opacity-10 text-warning">
+                            <span>★</span>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-0" id="topCategory">Loading...</h3>
+                    <small class="text-muted" id="topCategoryAmount">--</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Financial Status Card -->
+        <div class="col-md-4">
+            <div class="card stat-card h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="text-muted mb-0">Financial Status</h6>
+                        <div class="icon-box" id="statusIconBox">
+                            <span id="statusIcon">?</span>
+                        </div>
+                    </div>
+                    <h3 class="fw-bold mb-0" id="financialStatus">Loading...</h3>
+                    <small class="text-muted" id="statusMessage">Analyzing...</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card stat-card">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Expense Distribution</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="chart-container">
+                        <canvas id="pieChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 1. Data Retrieval from Flask ---
+    // Using Jinja2 to inject data from the backend
+    const labels = {{ labels | tojson }};
+    const values = {{ values | tojson }};
+    const total_saving = {{ total_saving | tojson }};
+
+    // --- 2. Logic to Update Cards ---
+
+    // A. Update Savings Card
+    document.getElementById('savingsAmount').innerText = 'Rs ' + total_saving.toLocaleString();
+
+    // Variable to track which category is the highest
+    let topCategoryName = "";
+
+    // B. Calculate Top Category (Max Value)
+    if (values.length > 0) {
+        const maxVal = Math.max(...values);
+        const maxIndex = values.indexOf(maxVal);
+        
+        topCategoryName = labels[maxIndex];
+
+        document.getElementById('topCategory').innerText = topCategoryName;
+        document.getElementById('topCategoryAmount').innerText = 'Amount: Rs ' + maxVal.toLocaleString();
+    } else {
+        document.getElementById('topCategory').innerText = "N/A";
+    }
+
+    // C. Financial Status Logic
+    // If top category is "Income" -> Profit. Else -> Loss.
+    const statusEl = document.getElementById('financialStatus');
+    const statusMsgEl = document.getElementById('statusMessage');
+    const iconBox = document.getElementById('statusIconBox');
+    const icon = document.getElementById('statusIcon');
+
+    if (values.length === 0) {
+        // No data available
+        statusEl.innerText = "No Data";
+        statusEl.className = "fw-bold mb-0 text-muted";
+        statusMsgEl.innerText = "Add transactions";
+        iconBox.className = "icon-box bg-secondary bg-opacity-10 text-secondary";
+        icon.innerText = "-";
+    } 
+    else if (topCategoryName.toLowerCase() === 'income') {
+        // Profit Scenario
+        statusEl.innerText = "Profit";
+        statusEl.className = "fw-bold mb-0 text-success"; // Green Text
+        statusMsgEl.innerText = "Income is highest";
+        
+        iconBox.className = "icon-box bg-success bg-opacity-10 text-success";
+        icon.innerText = "▲"; // Up Arrow
+    } 
+    else {
+        // Loss Scenario (Any expense category > Income)
+        statusEl.innerText = "Loss";
+        statusEl.className = "fw-bold mb-0 text-danger"; // Red Text
+        statusMsgEl.innerText = "Expenses exceed income";
+        
+        iconBox.className = "icon-box bg-danger bg-opacity-10 text-danger";
+        icon.innerText = "▼"; // Down Arrow
+    }
+
+    // --- 3. Chart Configuration ---
+    const ctx = document.getElementById('pieChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'doughnut', 
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: [
+                    "rgba(75, 192, 192, 0.8)", // Green/Teal
+                    "rgba(255, 99, 132, 0.8)", // Red
+                    "rgba(54, 162, 235, 0.8)", // Blue
+                    "rgba(255, 206, 86, 0.8)", // Yellow
+                    "rgba(153, 102, 255, 0.8)", // Purple
+                    "rgba(255, 159, 64, 0.8)"  // Orange
+                ],
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                hoverOffset: 10
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false, 
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        font: { size: 14 }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed !== null) {
+                                // Add currency formatting to tooltip
+                                label += 'Rs ' + context.parsed.toLocaleString();
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            layout: {
+                padding: 20
+            }
+        }
+    });
+</script>
+{% endblock body %}
