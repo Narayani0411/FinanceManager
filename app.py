@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
+import logging
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///finance.db"
@@ -60,6 +61,7 @@ def delete(sr):
     
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     with app.app_context():
         db.create_all()
     app.run(debug=False)
