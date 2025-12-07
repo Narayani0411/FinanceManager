@@ -15,8 +15,8 @@ class Finance(db.Model):
     def __repr__(self):
         return f"{self.sr} - {self.amount}"
     
-    with app.app_context():
-        db.create_all()
+with app.app_context():
+    db.create_all()
 
 @app.route('/', methods=['GET','POST'])
 def finance():
